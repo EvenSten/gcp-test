@@ -1,0 +1,434 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap");
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Page shell ─────────────────────────────────────────── */
+
+.dd-page {
+  min-height: 100vh;
+  background: #080c14;
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.dd-blob {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+.dd-blob-cyan {
+  top: 5%;
+  left: -5%;
+  background: rgba(0, 229, 255, 0.055);
+}
+.dd-blob-purple {
+  bottom: 5%;
+  right: -5%;
+  background: rgba(185, 79, 255, 0.055);
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.dd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  z-index: 1;
+}
+
+.dd-logo {
+  font-family: "Space Mono", monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 3px;
+}
+
+.dd-hsub {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 2px;
+  font-family: "Space Mono", monospace;
+  margin-top: 2px;
+}
+
+.dd-hright {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dd-pill {
+  background: #4dffb418;
+  color: #4dffb4;
+  border: 1px solid #4dffb440;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: "Space Mono", monospace;
+  letter-spacing: 2px;
+}
+
+.dd-hdate {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: "Space Mono", monospace;
+}
+
+/* ── Main layout ─────────────────────────────────────────── */
+
+.dd-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  padding: 28px 30px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+/* ── Left panel ──────────────────────────────────────────── */
+
+.dd-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+.dd-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 318px;
+}
+
+.dd-li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dd-ldot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dd-llabel {
+  flex: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dd-lpct {
+  font-size: 12px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.dd-lamt {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.28);
+  font-family: "Space Mono", monospace;
+}
+
+/* ── Right panel ─────────────────────────────────────────── */
+
+.dd-right {
+  flex: 1;
+  min-width: 290px;
+  max-width: 500px;
+  background: rgba(255, 255, 255, 0.022);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 16px;
+  padding: 22px;
+  backdrop-filter: blur(12px);
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dd-right-hidden {
+  opacity: 0;
+  transform: translateX(18px);
+  pointer-events: none;
+}
+
+/* ── Detail header ───────────────────────────────────────── */
+
+.dd-dhead {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  position: relative;
+}
+
+.dd-dtitle {
+  font-size: 19px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.dd-dsub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.38);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.dd-xbtn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* ── Stats row ───────────────────────────────────────────── */
+
+.dd-stats {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 20px;
+}
+
+.dd-scard {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 10px;
+  padding: 10px 13px;
+}
+
+.dd-slbl {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 2px;
+  font-family: "Space Mono", monospace;
+  margin-bottom: 5px;
+}
+
+.dd-sval {
+  font-size: 15px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+}
+
+.dd-sec-lbl {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 3px;
+  font-family: "Space Mono", monospace;
+  margin-bottom: 10px;
+}
+
+/* ── Category list ───────────────────────────────────────── */
+
+.dd-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dd-cat-box {
+  background: rgba(255, 255, 255, 0.028);
+  border-radius: 10px;
+  padding: 11px 13px;
+  animation: slideUp 0.35s ease forwards;
+}
+
+.dd-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dd-cat-row-l,
+.dd-cat-row-r {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dd-cat-row-r {
+  gap: 7px;
+}
+
+.dd-badge {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-family: "Space Mono", monospace;
+  letter-spacing: 1px;
+}
+
+.dd-cat-n {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.dd-cat-amt {
+  font-size: 13px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+}
+
+.dd-cat-pct {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
+  font-family: "Space Mono", monospace;
+}
+
+.dd-chev {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+/* ── Line items ──────────────────────────────────────────── */
+
+.dd-line-list {
+  padding-top: 9px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dd-line-row {
+  padding: 7px 0;
+}
+
+.dd-line-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dd-line-name {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.dd-line-amt {
+  font-size: 12px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.dd-line-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.dd-line-pct {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.22);
+  font-family: "Space Mono", monospace;
+  white-space: nowrap;
+}
+
+/* ── Detail footer ───────────────────────────────────────── */
+
+.dd-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+.dd-ft-lbl {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 3px;
+  font-family: "Space Mono", monospace;
+}
+
+.dd-ft-val {
+  font-size: 17px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+
+.dd-empty {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 44px;
+  gap: 9px;
+  opacity: 0.32;
+}
+
+.dd-et {
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 2px;
+}
+
+.dd-es {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.28);
+  text-align: center;
+  max-width: 200px;
+  line-height: 1.6;
+}
+
+/* ── Mini progress bar ───────────────────────────────────── */
+
+.dd-minibar-track {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.dd-minibar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
