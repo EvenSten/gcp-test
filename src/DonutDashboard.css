@@ -432,3 +432,115 @@
   border-radius: 2px;
   transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* ── Loading state ───────────────────────────────────────── */
+
+.dd-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dd-loading-text {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 4px;
+}
+
+/* ── Editor nav button ───────────────────────────────────── */
+
+.dd-editor-link {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  color: #00e5ff;
+  text-decoration: none;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 8px;
+  padding: 6px 14px;
+  white-space: nowrap;
+}
+.dd-editor-link:hover {
+  background: rgba(0, 229, 255, 0.16);
+}
+
+/* ── Responsive SVG ──────────────────────────────────────── */
+
+.dd-chart-svg {
+  width: 320px;
+  height: 320px;
+}
+
+/* ── Mobile ( ≤ 640px ) ──────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .dd-header {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .dd-hdate,
+  .dd-pill {
+    display: none;
+  }
+
+  .dd-main {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .dd-left {
+    width: 100%;
+  }
+
+  .dd-chart-svg {
+    width: min(300px, calc(100vw - 32px));
+    height: min(300px, calc(100vw - 32px));
+  }
+
+  .dd-legend {
+    width: 100%;
+  }
+
+  .dd-right {
+    min-width: unset;
+    max-width: 100%;
+    max-height: none;
+    width: 100%;
+  }
+
+  /* On mobile, just hide rather than slide — there's no room to the right */
+  .dd-right-hidden {
+    display: none;
+  }
+
+  .dd-stats {
+    flex-wrap: wrap;
+  }
+
+  .dd-scard {
+    min-width: calc(50% - 5px);
+  }
+
+  .dd-sval {
+    font-size: 13px;
+  }
+}
+
+/* ── Tablet ( 641px – 960px ) ────────────────────────────── */
+
+@media (min-width: 641px) and (max-width: 960px) {
+  .dd-main {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .dd-right {
+    max-width: 100%;
+    min-width: unset;
+    max-height: none;
+  }
+}
