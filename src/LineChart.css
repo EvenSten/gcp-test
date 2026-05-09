@@ -1,0 +1,244 @@
+/* ── Wrapper ─────────────────────────────────────────────── */
+
+.lc-wrap {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  width: 100%;
+  min-height: 400px;
+}
+
+/* ── Chart area ──────────────────────────────────────────── */
+
+.lc-chart-area {
+  flex: 1;
+  position: relative;
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 14px;
+  padding: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lc-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lc-single-note {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 4px 0 0;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+
+.lc-tooltip {
+  position: absolute;
+  top: 28px;
+  background: rgba(8, 12, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  min-width: 170px;
+  max-width: 220px;
+}
+
+.lc-tt-date {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.lc-tt-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 0;
+}
+
+.lc-tt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lc-tt-label {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-tt-val {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Series legend ───────────────────────────────────────── */
+
+.lc-legend {
+  width: 210px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 14px;
+  padding: 16px 12px;
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lc-leg-title {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+.lc-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lc-leg-item:hover { background: rgba(255, 255, 255, 0.04); }
+
+.lc-leg-check {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.lc-leg-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lc-leg-label {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-leg-cat {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.2);
+  font-family: "Space Mono", monospace;
+  flex-shrink: 0;
+}
+
+.lc-leg-section {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 2px;
+  padding: 10px 6px 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 4px;
+  user-select: none;
+}
+.lc-leg-section:first-of-type { border-top: none; margin-top: 0; }
+
+.lc-leg-chev {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+
+.lc-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  opacity: 0.35;
+  width: 100%;
+  padding: 40px;
+  text-align: center;
+}
+
+.lc-empty-icon {
+  font-size: 36px;
+  margin-bottom: 4px;
+}
+
+.lc-empty-title {
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 2px;
+}
+
+.lc-empty-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  max-width: 260px;
+  line-height: 1.6;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .lc-wrap {
+    flex-direction: column;
+    min-height: unset;
+  }
+
+  .lc-legend {
+    width: 100%;
+    max-height: 220px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .lc-leg-title {
+    width: 100%;
+  }
+
+  .lc-leg-section {
+    width: 100%;
+  }
+}

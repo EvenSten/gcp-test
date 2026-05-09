@@ -448,6 +448,92 @@
   letter-spacing: 4px;
 }
 
+/* ── Year bar ────────────────────────────────────────────── */
+
+.dd-year-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.dd-year-btn {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 4px 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+
+.dd-year-btn:hover:not(.dd-year-btn--active) {
+  color: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.dd-year-btn--active {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.dd-year-btn--live {
+  color: #4dffb4;
+  border-color: #4dffb430;
+}
+
+.dd-year-btn--live.dd-year-btn--active {
+  background: #4dffb412;
+}
+
+@media (max-width: 640px) {
+  .dd-year-bar {
+    padding: 10px 16px;
+  }
+}
+
+/* ── View toggle ─────────────────────────────────────────── */
+
+.dd-view-toggle {
+  display: flex;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.dd-vtbtn {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.dd-vtbtn--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.dd-vtbtn:hover:not(.dd-vtbtn--active) {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* ── Editor nav button ───────────────────────────────────── */
 
 .dd-editor-link {
@@ -480,6 +566,13 @@
   .dd-header {
     padding: 12px 16px;
     gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dd-view-toggle {
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
 
   .dd-hdate,

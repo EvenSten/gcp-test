@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ref, onValue } from "firebase/database";
 import { db } from "./firebase";
+import LineChart from "./LineChart";
 import "./DonutDashboard.css";
 
 const CATEGORY_COLORS = {
@@ -95,16 +96,67 @@ export default function DonutDashboard() {
   const [active, setActive] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [openCats, setOpenCats] = useState({});
+  const [view, setView] = useState("donut");
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [dashYear, setDashYear] = useState("live");
+  const [dashYears, setDashYears] = useState([]);
 
+  // Load available years from history keys once on mount
   useEffect(() => {
-    const unsub = onValue(ref(db, "budget"), (snapshot) => {
-      const normalized = normalizeSegments(snapshot.val());
-      setData(normalized);
-      setActive((prev) => prev ? (normalized.find((d) => d.id === prev.id) ?? null) : null);
-      setLoading(false);
-    });
+    const unsub = onValue(ref(db, "history"), (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        const years = Object.keys(val)
+          .map(Number)
+          .filter((y) => y > 2000 && y < 2100)
+          .sort((a, b) => a - b);
+        setDashYears(years);
+      }
+    }, { onlyOnce: true });
     return () => unsub();
   }, []);
+
+  // Load budget data — persistent listener for LIVE, one-time read for a year
+  useEffect(() => {
+    setLoading(true);
+    setActive(null);
+    setOpenCats({});
+
+    if (dashYear === "live") {
+      const unsub = onValue(ref(db, "budget"), (snapshot) => {
+        const normalized = normalizeSegments(snapshot.val());
+        setData(normalized);
+        setLoading(false);
+      });
+      return () => unsub();
+    } else {
+      const unsub = onValue(ref(db, `history/${dashYear}`), (snapshot) => {
+        const val = snapshot.val();
+        const normalized = normalizeSegments(val?.segments ?? null);
+        setData(normalized);
+        setLoading(false);
+      }, { onlyOnce: true });
+      return () => unsub();
+    }
+  }, [dashYear]);
+
+  useEffect(() => {
+    if (view !== "chart") return;
+    setHistoryLoading(true);
+    const unsub = onValue(ref(db, "history"), (snapshot) => {
+      const val = snapshot.val();
+      const entries = val
+        ? Object.values(val)
+            .filter(Boolean)
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .map((e) => ({ ...e, segments: normalizeSegments(e.segments) }))
+        : [];
+      setHistory(entries);
+      setHistoryLoading(false);
+    });
+    return () => unsub();
+  }, [view]);
 
   const arcs = useMemo(() => buildArcs(data), [data]);
 
@@ -143,15 +195,59 @@ export default function DonutDashboard() {
           <div className="dd-logo">◈ NEXUS</div>
           <div className="dd-hsub">Budget Allocation · FY 2025</div>
         </div>
+        <div className="dd-view-toggle">
+          <button className={`dd-vtbtn${view === "donut" ? " dd-vtbtn--active" : ""}`} onClick={() => setView("donut")}>
+            ◉ Overview
+          </button>
+          <button className={`dd-vtbtn${view === "chart" ? " dd-vtbtn--active" : ""}`} onClick={() => setView("chart")}>
+            ╱ Trends
+          </button>
+        </div>
         <div className="dd-hright">
-          <span className="dd-pill">LIVE</span>
-          <span className="dd-hdate">Q2 Report</span>
+          <span
+            className="dd-pill"
+            style={dashYear !== "live" ? { background: "#FFD93D18", color: "#FFD93D", border: "1px solid #FFD93D40" } : {}}
+          >
+            {dashYear === "live" ? "LIVE" : `FY ${dashYear}`}
+          </span>
+          <span className="dd-hdate">
+            {dashYear === "live" ? "Current" : "Historical"}
+          </span>
           <Link to="/editor" className="dd-editor-link">Edit Data →</Link>
         </div>
       </header>
 
+      {/* Year selector — only shown in Overview mode */}
+      {view === "donut" && dashYears.length > 0 && (
+        <div className="dd-year-bar">
+          <button
+            className={`dd-year-btn dd-year-btn--live${dashYear === "live" ? " dd-year-btn--active" : ""}`}
+            onClick={() => setDashYear("live")}
+          >
+            ● LIVE
+          </button>
+          {dashYears.map((y) => (
+            <button
+              key={y}
+              className={`dd-year-btn${dashYear === y ? " dd-year-btn--active" : ""}`}
+              onClick={() => setDashYear(y)}
+            >
+              FY {y}
+            </button>
+          ))}
+        </div>
+      )}
+
       <main className="dd-main">
-        {data.length === 0 ? (
+        {/* ── Trends view ── */}
+        {view === "chart" && (
+          historyLoading
+            ? <div className="dd-loading-text" style={{ margin: "auto" }}>LOADING HISTORY...</div>
+            : <LineChart history={history} />
+        )}
+
+        {/* ── Overview (donut) view ── */}
+        {view === "donut" && data.length === 0 && (
           <div className="dd-empty" style={{ opacity: 1, flex: "1 1 100%" }}>
             <div style={{ fontSize: 42, opacity: 0.15, marginBottom: 8 }}>◈</div>
             <div className="dd-et">No data yet</div>
@@ -161,7 +257,9 @@ export default function DonutDashboard() {
               {" "}to add budget segments.
             </div>
           </div>
-        ) : (
+        )}
+
+        {view === "donut" && data.length > 0 && (
           <>
             {/* ── Left: donut + legend ── */}
             <div className="dd-left">

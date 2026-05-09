@@ -85,6 +85,83 @@
   color: #00e5ff;
 }
 
+/* ── Year toggle ─────────────────────────────────────────── */
+
+.de-year-toggle {
+  display: flex;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+  flex-wrap: nowrap;
+}
+
+.de-year-btn {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.de-year-btn--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.de-year-btn:hover:not(.de-year-btn--active) {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.de-year-add {
+  font-family: "Space Mono", monospace;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.28);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.de-year-add:hover {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.de-year-input {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 7px;
+  padding: 4px 8px;
+  width: 68px;
+  outline: none;
+  letter-spacing: 1px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.de-year-input::-webkit-outer-spin-button,
+.de-year-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
 /* ── Body layout ─────────────────────────────────────────── */
 
 .de-body {
@@ -220,6 +297,56 @@
   color: rgba(255, 255, 255, 0.28);
   letter-spacing: 3px;
   margin-bottom: 16px;
+}
+
+/* ── Global budget banner ────────────────────────────────── */
+
+.de-global-budget {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  background: rgba(0, 229, 255, 0.04);
+  border: 1px solid rgba(0, 229, 255, 0.14);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.de-global-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.de-global-input {
+  font-size: 18px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+  padding: 10px 14px;
+  color: #00e5ff;
+  border-color: rgba(0, 229, 255, 0.2);
+}
+
+.de-global-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.de-global-fmt {
+  font-family: "Space Mono", monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 1px;
+}
+
+.de-global-sub {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  transition: color 0.3s;
 }
 
 /* ── Form fields ─────────────────────────────────────────── */
@@ -444,6 +571,16 @@
   font-size: 12px;
 }
 
+.de-item-pct-read {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
 .de-item-del {
   width: 28px;
   height: 28px;
@@ -529,6 +666,15 @@
 @media (max-width: 640px) {
   .de-header {
     padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .de-year-toggle {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    overflow-x: auto;
   }
 
   /* Sidebar becomes a horizontal scrollable chip strip */
