@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ref, onValue } from "firebase/database";
-import { db } from "./firebase";
+import { signOut } from "firebase/auth";
+import { db, auth } from "./firebase";
 import LineChart from "./LineChart";
 import "./DonutDashboard.css";
 
@@ -214,6 +215,7 @@ export default function DonutDashboard() {
             {dashYear === "live" ? "Current" : "Historical"}
           </span>
           <Link to="/editor" className="dd-editor-link">Edit Data →</Link>
+          <button className="dd-signout-btn" onClick={() => signOut(auth)}>Sign Out</button>
         </div>
       </header>
 

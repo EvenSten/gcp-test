@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ref, onValue, set } from "firebase/database";
-import { db } from "./firebase";
+import { signOut } from "firebase/auth";
+import { db, auth } from "./firebase";
 import "./DataEditor.css";
 
 const PRESET_COLORS = [
@@ -394,7 +395,10 @@ export default function DataEditor() {
             <button className="de-year-add" onClick={() => setAddingYear(true)} title="Add any year">+</button>
           )}
         </div>
-        <Link to="/" className="de-back-link">← Dashboard</Link>
+        <div className="de-header-right">
+          <Link to="/" className="de-back-link">← Dashboard</Link>
+          <button className="de-signout-btn" onClick={() => signOut(auth)}>Sign Out</button>
+        </div>
       </header>
 
       <div className="de-body">

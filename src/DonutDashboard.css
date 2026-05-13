@@ -553,6 +553,24 @@
   background: rgba(0, 229, 255, 0.16);
 }
 
+.dd-signout-btn {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.dd-signout-btn:hover {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
 /* ── Responsive SVG ──────────────────────────────────────── */
 
 .dd-chart-svg {

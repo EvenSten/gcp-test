@@ -1,0 +1,206 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap");
+
+/* ── Page ────────────────────────────────────────────────── */
+
+.ln-page {
+  min-height: 100vh;
+  background: #080c14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "DM Sans", sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.ln-blob {
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+}
+.ln-blob-cyan   { top: -10%;   left: -10%;  background: rgba(0, 229, 255, 0.07); }
+.ln-blob-purple { bottom: -10%; right: -10%; background: rgba(185, 79, 255, 0.07); }
+
+/* ── Center column ───────────────────────────────────────── */
+
+.ln-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Branding ────────────────────────────────────────────── */
+
+.ln-brand {
+  text-align: center;
+}
+
+.ln-logo {
+  font-family: "Space Mono", monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+}
+
+.ln-tagline {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 2px;
+  font-family: "Space Mono", monospace;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+
+.ln-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 32px 28px;
+  backdrop-filter: blur(16px);
+}
+
+.ln-card-title {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 4px;
+  margin-bottom: 24px;
+}
+
+/* ── Form ────────────────────────────────────────────────── */
+
+.ln-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ln-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ln-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 2px;
+}
+
+.ln-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  font-family: "DM Sans", sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.ln-input:focus {
+  border-color: rgba(0, 229, 255, 0.45);
+}
+.ln-input::placeholder {
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.ln-error {
+  font-size: 12px;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: 8px;
+  padding: 9px 12px;
+  line-height: 1.5;
+}
+
+.ln-submit {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 10px;
+  padding: 12px;
+  color: #00e5ff;
+  font-size: 13px;
+  font-family: "Space Mono", monospace;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+.ln-submit:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.2);
+}
+.ln-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Divider ─────────────────────────────────────────────── */
+
+.ln-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: rgba(255, 255, 255, 0.18);
+  font-size: 11px;
+  font-family: "Space Mono", monospace;
+  letter-spacing: 1px;
+}
+.ln-divider::before,
+.ln-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ── Google button ───────────────────────────────────────── */
+
+.ln-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-family: "DM Sans", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ln-google:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.ln-google:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ln-google-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}

@@ -85,6 +85,30 @@
   color: #00e5ff;
 }
 
+.de-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.de-signout-btn {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.de-signout-btn:hover {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
 /* ── Year toggle ─────────────────────────────────────────── */
 
 .de-year-toggle {
