@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import DonutDashboard from "./DonutDashboard";
 import DataEditor from "./DataEditor";
+import Stocks from "./Stocks";
 import Login from "./Login";
 
 function PrivateRoute({ children }) {
@@ -37,6 +38,10 @@ export default function App() {
         <Route
           path="/editor"
           element={user ? <DataEditor /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/stocks"
+          element={user ? <Stocks /> : <Navigate to="/login" replace />}
         />
       </Routes>
     </BrowserRouter>

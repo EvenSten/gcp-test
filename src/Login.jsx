@@ -3,6 +3,8 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  fetchSignInMethodsForEmail,
+  getAdditionalUserInfo,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import "./Login.css";
@@ -10,11 +12,8 @@ import "./Login.css";
 const googleProvider = new GoogleAuthProvider();
 
 const AUTH_ERRORS = {
-  "auth/user-not-found":      "No account found with this email.",
-  "auth/wrong-password":      "Incorrect password.",
-  "auth/invalid-credential":  "Incorrect email or password.",
-  "auth/invalid-email":       "Invalid email address.",
-  "auth/too-many-requests":   "Too many attempts. Try again later.",
+  "auth/invalid-email":          "Invalid email address.",
+  "auth/too-many-requests":      "Too many attempts. Try again later.",
   "auth/network-request-failed": "Network error. Check your connection.",
 };
 
@@ -34,9 +33,22 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // App.jsx's onAuthStateChanged handles the redirect
     } catch (err) {
-      setError(friendlyError(err.code));
+      if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+        try {
+          const methods = await fetchSignInMethodsForEmail(auth, email);
+          setError(
+            methods.length === 0
+              ? "No account found with this email. Contact your administrator to get access."
+              : "Incorrect password."
+          );
+        } catch {
+          // Email enumeration protection is enabled — can't distinguish, show generic
+          setError("Incorrect email or password. If you don't have an account, contact your administrator.");
+        }
+      } else {
+        setError(friendlyError(err.code));
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +58,12 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const info = getAdditionalUserInfo(result);
+      if (info?.isNewUser) {
+        await result.user.delete();
+        setError("No account found for this Google address. Contact your administrator to get access.");
+      }
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
         setError(friendlyError(err.code));
@@ -64,7 +81,7 @@ export default function Login() {
       <div className="ln-center">
         <div className="ln-brand">
           <div className="ln-logo">◈ NEXUS</div>
-          <div className="ln-tagline">Budget Intelligence Platform</div>
+          <div className="ln-tagline">Knowledge Platform</div>
         </div>
 
         <div className="ln-card">
