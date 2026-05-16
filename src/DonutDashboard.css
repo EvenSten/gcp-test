@@ -774,6 +774,7 @@
   cursor: grab;
   user-select: none;
   background: rgba(255, 255, 255, 0.012);
+  touch-action: none;
 }
 .db-widget-header:active { cursor: grabbing; }
 
@@ -1044,7 +1045,9 @@
 /* ── Mobile overrides ─────────────────────────────────── */
 
 @media (max-width: 640px) {
-  .db-tray { padding: 10px 16px; }
+  /* Larger touch targets in tray */
+  .db-tray { padding: 10px 16px; gap: 6px; }
+  .db-tray-item { padding: 10px 14px; min-height: 44px; }
 
   .db-grid {
     grid-template-columns: 1fr;
@@ -1057,6 +1060,21 @@
 
   .db-drop-zone { grid-column: span 1; }
   .db-empty     { grid-column: span 1; padding: 40px 20px; }
+
+  /* Larger touch targets in widget header */
+  .db-widget-header {
+    padding: 12px 16px;
+    min-height: 48px;
+  }
+  .db-widget-drag-handle {
+    font-size: 20px;
+    padding: 0 4px;
+    color: rgba(255, 255, 255, 0.3);
+  }
+  .db-widget-remove {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
 
   .db-donut-wrap { padding: 14px; gap: 16px; }
 

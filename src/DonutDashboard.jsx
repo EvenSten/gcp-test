@@ -423,7 +423,8 @@ function LineWidget({ history, historyLoading }) {
 // ── Widget card wrapper ──────────────────────────────────────
 
 function WidgetCard({ widget, idx, dragSrc, dragOver, data, history, historyLoading, dashYear,
-  onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop, onRemove }) {
+  onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop, onRemove,
+  onTouchDragStart, onTouchDragMove, onTouchDragEnd }) {
 
   const info    = WIDGET_CATALOG.find((c) => c.type === widget.type);
   const isFull  = FULL_WIDTH.has(widget.type);
@@ -451,12 +452,16 @@ function WidgetCard({ widget, idx, dragSrc, dragOver, data, history, historyLoad
       onDragOver={(e) => { e.preventDefault(); onDragOver(idx); }}
       onDragLeave={onDragLeave}
       onDrop={(e) => { e.preventDefault(); onDrop(idx); }}
+      data-widget-idx={idx}
     >
       <div
         className="db-widget-header"
         draggable
         onDragStart={() => onDragStart(idx)}
         onDragEnd={onDragEnd}
+        onTouchStart={() => onTouchDragStart(idx)}
+        onTouchMove={(e) => { const t = e.touches[0]; onTouchDragMove(t.clientX, t.clientY); }}
+        onTouchEnd={onTouchDragEnd}
       >
         <span className="db-widget-drag-handle">⠿</span>
         <span className="db-widget-icon">{info?.icon}</span>
@@ -494,6 +499,9 @@ export default function DonutDashboard() {
   const [dragSrc, setDragSrc]         = useState(null);
   const [trayDragType, setTrayDragType] = useState(null);
   const [dragOver, setDragOver]       = useState(null);
+
+  const touchDragSrcRef  = useRef(null);
+  const touchDragOverRef = useRef(null);
 
   const hasLineWidget = widgets.some((w) => w.type === "line");
 
@@ -555,6 +563,39 @@ export default function DonutDashboard() {
   }, [hasLineWidget]);
 
   // ── Widget management ──────────────────────────────────────
+
+  const handleWidgetTouchDragStart = (idx) => {
+    touchDragSrcRef.current  = idx;
+    touchDragOverRef.current = idx;
+    setDragSrc(idx);
+  };
+
+  const handleWidgetTouchDragMove = (x, y) => {
+    if (touchDragSrcRef.current === null) return;
+    const el   = document.elementFromPoint(x, y);
+    const card = el?.closest("[data-widget-idx]");
+    if (card) {
+      const idx = parseInt(card.dataset.widgetIdx, 10);
+      if (!isNaN(idx)) { touchDragOverRef.current = idx; setDragOver(idx); }
+    }
+  };
+
+  const handleWidgetTouchDragEnd = () => {
+    const src  = touchDragSrcRef.current;
+    const over = touchDragOverRef.current;
+    if (src !== null && over !== null && src !== over) {
+      setWidgets((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(src, 1);
+        next.splice(src < over ? over - 1 : over, 0, moved);
+        return next;
+      });
+    }
+    touchDragSrcRef.current  = null;
+    touchDragOverRef.current = null;
+    setDragSrc(null);
+    setDragOver(null);
+  };
 
   const addWidget = (type) => {
     setWidgets((prev) => [...prev, { id: `w${Date.now()}`, type }]);
@@ -713,6 +754,9 @@ export default function DonutDashboard() {
             onDragLeave={() => setDragOver(null)}
             onDrop={handleDrop}
             onRemove={removeWidget}
+            onTouchDragStart={handleWidgetTouchDragStart}
+            onTouchDragMove={handleWidgetTouchDragMove}
+            onTouchDragEnd={handleWidgetTouchDragEnd}
           />
         ))}
 

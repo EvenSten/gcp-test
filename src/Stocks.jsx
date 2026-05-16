@@ -5,17 +5,17 @@ import { auth } from "./firebase";
 import "./Stocks.css";
 
 // ── Yahoo Finance via CORS proxy ──────────────────────────────
-// Yahoo Finance doesn't send CORS headers, so browser requests need a proxy.
-// corsproxy.io is a free, open-source CORS proxy.
+// v8/finance/chart works from the browser via corsproxy.io.
+// quoteSummary (financials) requires auth cookies so we don't use it.
 
 const CORS_PROXY = "https://corsproxy.io/?url=";
 const YF_CHART   = "https://query1.finance.yahoo.com/v8/finance/chart";
 
-const _cache = new Map(); // symbol -> { data, ts }
-const TTL    = 5 * 60 * 1000; // re-fetch after 5 minutes
+const _cache = new Map();
+const TTL    = 5 * 60 * 1000;
 
 function formatTime(ts) {
-  const d = new Date(ts * 1000); // Yahoo sends Unix seconds
+  const d = new Date(ts * 1000);
   return `${d.getHours()}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
@@ -31,23 +31,37 @@ function parseYahooResponse(symbol, json) {
     .map((t, i) => ({ time: formatTime(t), price: closes[i], i }))
     .filter((p) => p.price != null && !isNaN(p.price));
 
-  const price     = meta.regularMarketPrice ?? points[points.length - 1]?.price ?? 0;
-  const open      = meta.chartPreviousClose ?? meta.regularMarketOpen ?? price;
-  const change    = price - open;
-  const changePct = open > 0 ? (change / open) * 100 : 0;
+  const price     = meta.regularMarketPrice ?? 0;
+  const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price;
+  const change    = price - prevClose;
+  const changePct = prevClose > 0 ? (change / prevClose) * 100 : 0;
 
   return {
     symbol:      symbol.toUpperCase(),
     name:        meta.shortName ?? meta.longName ?? symbol,
     price,
-    open,
+    prevClose,
     change,
     changePct,
     up:          changePct >= 0,
     points,
-    currency:    meta.currency ?? "USD",
+    currency:    meta.currency  ?? "USD",
     marketState: meta.marketState ?? "REGULAR",
+    exchange:    meta.exchangeName ?? meta.fullExchangeName ?? null,
     isMock:      false,
+    dayOpen:     meta.regularMarketOpen    ?? null,
+    dayHigh:     meta.regularMarketDayHigh ?? null,
+    dayLow:      meta.regularMarketDayLow  ?? null,
+    volume:      meta.regularMarketVolume  ?? null,
+    week52High:  meta.fiftyTwoWeekHigh     ?? null,
+    week52Low:   meta.fiftyTwoWeekLow      ?? null,
+    marketCap:   meta.marketCap            ?? null,
+    postPrice:   meta.postMarketPrice          ?? null,
+    postChange:  meta.postMarketChange         ?? null,
+    postPct:     meta.postMarketChangePercent  ?? null,
+    prePrice:    meta.preMarketPrice           ?? null,
+    preChange:   meta.preMarketChange          ?? null,
+    prePct:      meta.preMarketChangePercent   ?? null,
   };
 }
 
@@ -56,7 +70,7 @@ async function fetchSymbolData(symbol) {
   const cached = _cache.get(sym);
   if (cached && Date.now() - cached.ts < TTL) return cached.data;
 
-  const yfUrl = `${YF_CHART}/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=false`;
+  const yfUrl = `${YF_CHART}/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=true`;
   const res   = await fetch(CORS_PROXY + encodeURIComponent(yfUrl));
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json  = await res.json();
@@ -66,7 +80,7 @@ async function fetchSymbolData(symbol) {
   return data;
 }
 
-// ── Seeded mock data (fallback when Yahoo Finance is unreachable) ──
+// ── Seeded mock fallback ──────────────────────────────────────
 
 const STOCK_NAMES = {
   AAPL: "Apple Inc.", GOOGL: "Alphabet Inc.", MSFT: "Microsoft Corp.", AMZN: "Amazon.com Inc.",
@@ -97,8 +111,8 @@ function getMockData(symbol) {
   const rand = seededRNG(strSeed(sym + new Date().toDateString()));
 
   let price = base * (1 + (rand() - 0.5) * 0.04);
-  const open  = price;
-  const pts   = [];
+  const prevClose = price;
+  const pts = [];
 
   for (let i = 0; i <= 78; i++) {
     const min = 570 + i * 5;
@@ -107,9 +121,17 @@ function getMockData(symbol) {
   }
 
   const last = pts[pts.length - 1].price;
-  const chg  = last - open;
-  const pct  = (chg / open) * 100;
-  return { symbol: sym, name: STOCK_NAMES[sym] ?? sym, price: last, open, change: chg, changePct: pct, up: pct >= 0, points: pts, currency: "USD", marketState: "MOCK", isMock: true };
+  const chg  = last - prevClose;
+  const pct  = (chg / prevClose) * 100;
+  return {
+    symbol: sym, name: STOCK_NAMES[sym] ?? sym,
+    price: last, prevClose, change: chg, changePct: pct, up: pct >= 0,
+    points: pts, currency: "USD", marketState: "MOCK", isMock: true,
+    dayOpen: null, dayHigh: null, dayLow: null, volume: null,
+    week52High: null, week52Low: null, exchange: null, marketCap: null,
+    postPrice: null, postChange: null, postPct: null,
+    prePrice: null, preChange: null, prePct: null,
+  };
 }
 
 // ── Market index config ───────────────────────────────────────
@@ -121,15 +143,14 @@ const INDEX_CFG = [
   { key: "^VIX",  label: "VIX",     ticker: "VIX" },
 ];
 
-// Static fallback for indices (shown until real data arrives)
 const INDEX_FALLBACK = {
-  "^GSPC": { label: "S&P 500", value: "—",  change: "—", up: true  },
-  "^IXIC": { label: "NASDAQ",  value: "—",  change: "—", up: true  },
-  "^DJI":  { label: "DOW",     value: "—",  change: "—", up: false },
-  "^VIX":  { label: "VIX",     value: "—",  change: "—", up: false },
+  "^GSPC": { label: "S&P 500", value: "—", change: "—", up: true  },
+  "^IXIC": { label: "NASDAQ",  value: "—", change: "—", up: true  },
+  "^DJI":  { label: "DOW",     value: "—", change: "—", up: false },
+  "^VIX":  { label: "VIX",     value: "—", change: "—", up: false },
 };
 
-// ── News headlines (static) ───────────────────────────────────
+// ── News (static) ─────────────────────────────────────────────
 
 const NEWS_ITEMS = [
   { headline: "Fed Minutes Signal Rate Cut Pause as Inflation Remains Sticky",             source: "Reuters",   time: "2h ago",  ticker: "SPY",  up: false },
@@ -145,88 +166,10 @@ const NEWS_ITEMS = [
 ];
 const NEWS_ACCENT = ["#00C8E0","#B94FFF","#FF6B35","#4DFFB4","#FFD93D","#FF6B6B","#57C7FF","#AA55FF","#33CC88","#FF9955"];
 
-// ── Financials fetch — Alpha Vantage ──────────────────────────
-// Key lives in .env as VITE_AV_KEY (git-ignored).
-// Alpha Vantage supports browser CORS natively — no proxy needed.
-
-const AV_BASE = "https://www.alphavantage.co/query";
-const AV_KEY  = import.meta.env.VITE_AV_KEY ?? "";
-
-const _finCache = new Map();
-const FIN_TTL   = 6 * 60 * 60 * 1000; // 6 hours — filings don't change intraday
-
-function avNum(v)  { return v && v !== "None" && !isNaN(v) ? parseFloat(v)                       : null; }
-function avPct(v)  { const n = avNum(v); return n != null ? `${(n * 100).toFixed(1)}%`           : "—";  }
-function avFmt(v)  { const n = avNum(v); return n != null ? n.toFixed(2)                          : "—";  }
-function avInt(v)  { return parseInt(v, 10) || 0; }
-
-async function fetchFinancials(symbol) {
-  const sym    = symbol.toUpperCase();
-  const cached = _finCache.get(sym);
-  if (cached && Date.now() - cached.ts < FIN_TTL) return cached.data;
-
-  if (!AV_KEY) throw new Error("No API key — add VITE_AV_KEY to your .env file");
-
-  // Fetch income statement + company overview in parallel
-  const [incRes, ovRes] = await Promise.all([
-    fetch(`${AV_BASE}?function=INCOME_STATEMENT&symbol=${sym}&apikey=${AV_KEY}`),
-    fetch(`${AV_BASE}?function=OVERVIEW&symbol=${sym}&apikey=${AV_KEY}`),
-  ]);
-
-  if (!incRes.ok) throw new Error(`Income statement fetch failed (${incRes.status})`);
-  if (!ovRes.ok)  throw new Error(`Overview fetch failed (${ovRes.status})`);
-
-  const [inc, ov] = await Promise.all([incRes.json(), ovRes.json()]);
-
-  // Alpha Vantage returns an "Information" key when rate-limited
-  if (inc.Information || inc.Note) throw new Error("Alpha Vantage rate limit reached (25 req/day on free tier)");
-  if (!inc.quarterlyReports?.length) throw new Error("No quarterly data returned — check the ticker symbol");
-
-  const quarters = inc.quarterlyReports.slice(0, 4).reverse().map((q) => {
-    const rev  = avInt(q.totalRevenue);
-    const gp   = avInt(q.grossProfit);
-    const ni   = avInt(q.netIncome);
-    const cogs = avInt(q.costOfRevenue);
-    return {
-      date:           q.fiscalDateEnding,
-      revenue:        rev,  revenueStr:    fmtB(rev),
-      grossProfit:    gp,   grossStr:      fmtB(gp),
-      netIncome:      ni,   netIncomeStr:  fmtB(ni),
-      costOfRevenue:  cogs,
-      operatingIncome: avInt(q.operatingIncome),
-    };
-  });
-
-  // Gross margin: derive from TTM figures if available, else latest quarter
-  const gpTTM  = avNum(ov.GrossProfitTTM);
-  const revTTM = avNum(ov.RevenueTTM);
-  const grossMarginStr = gpTTM && revTTM && revTTM > 0
-    ? `${((gpTTM / revTTM) * 100).toFixed(1)}%`
-    : (quarters.length && quarters[quarters.length - 1].revenue > 0
-        ? `${((quarters[quarters.length - 1].grossProfit / quarters[quarters.length - 1].revenue) * 100).toFixed(1)}%`
-        : "—");
-
-  const data = {
-    quarters,
-    profitMargin:    avPct(ov.ProfitMargin),
-    grossMargin:     grossMarginStr,
-    operatingMargin: avPct(ov.OperatingMarginTTM),
-    returnOnEquity:  avPct(ov.ReturnOnEquityTTM),
-    revenueGrowth:   avPct(ov.QuarterlyRevenueGrowthYOY),
-    earningsGrowth:  avPct(ov.QuarterlyEarningsGrowthYOY),
-    peRatio:         avFmt(ov.TrailingPE   || ov.ForwardPE),
-    eps:             avFmt(ov.EPS),
-    beta:            avFmt(ov.Beta),
-    returnOnAssets:  avPct(ov.ReturnOnAssetsTTM),
-  };
-
-  _finCache.set(sym, { data, ts: Date.now() });
-  return data;
-}
-
 // ── Helpers ───────────────────────────────────────────────────
 
 function fmtPrice(p) {
+  if (!p && p !== 0) return "—";
   if (p >= 10000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   if (p >= 1000)  return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   return `$${p.toFixed(2)}`;
@@ -234,222 +177,200 @@ function fmtPrice(p) {
 
 function fmtB(n) {
   if (n == null || isNaN(n)) return "—";
-  const abs = Math.abs(n);
-  const neg = n < 0 ? "-" : "";
+  const abs = Math.abs(n), neg = n < 0 ? "-" : "";
   if (abs >= 1e12) return `${neg}$${(abs / 1e12).toFixed(2)}T`;
   if (abs >= 1e9)  return `${neg}$${(abs / 1e9).toFixed(2)}B`;
   if (abs >= 1e6)  return `${neg}$${(abs / 1e6).toFixed(1)}M`;
   return `${neg}$${abs.toLocaleString()}`;
 }
 
-function fmtQuarter(dateStr) {
-  if (!dateStr || dateStr === "—") return "—";
-  const [year, month] = dateStr.split("-").map(Number);
-  return `Q${Math.ceil(month / 3)} '${String(year).slice(2)}`;
+function fmtVol(v) {
+  if (!v) return "—";
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K`;
+  return v.toLocaleString();
 }
 
-// ── FinancialLineChart ────────────────────────────────────────
+function fmtChg(change, pct) {
+  if (change == null || pct == null) return null;
+  const up = change >= 0;
+  return { str: `${up ? "▲" : "▼"} ${Math.abs(change).toFixed(2)} (${up ? "+" : ""}${pct.toFixed(2)}%)`, color: up ? "#4DFFB4" : "#FF6B6B", up };
+}
 
-function FinancialLineChart({ quarters, dataKey, label, color }) {
-  const [hovered, setHovered] = useState(null);
-  const values = quarters.map((q) => q[dataKey]);
-  const labels = quarters.map((q) => fmtQuarter(q.date));
+// ── Large chart (modal) ───────────────────────────────────────
 
-  if (!values.length || values.every((v) => !v)) {
-    return (
-      <div className="sk-fin-chart">
-        <div className="sk-fin-chart-label">{label}</div>
-        <div className="sk-fin-chart-empty">No data</div>
-      </div>
-    );
-  }
+function LargeStockChart({ points, up }) {
+  const [hoverIdx, setHoverIdx] = useState(null);
+  const svgRef = useRef(null);
 
-  const W = 280, H = 130;
-  const PAD = { top: 28, right: 16, bottom: 34, left: 8 };
-  const PW  = W - PAD.left - PAD.right;
-  const PH  = H - PAD.top  - PAD.bottom;
-  const n   = values.length;
+  if (!points || points.length < 2) return null;
 
-  const minV  = Math.min(...values);
-  const maxV  = Math.max(...values);
-  const range = maxV - minV || 1;
-  const xOf   = (i) => PAD.left + (i / Math.max(n - 1, 1)) * PW;
-  const yOf   = (v)  => PAD.top  + PH - ((v - minV) / range) * PH;
+  const W = 700, H = 190;
+  const PAD = { top: 16, right: 16, bottom: 30, left: 64 };
+  const PW = W - PAD.left - PAD.right;
+  const PH = H - PAD.top  - PAD.bottom;
 
-  const d     = values.map((v, i) => `${i === 0 ? "M" : "L"} ${xOf(i).toFixed(1)} ${yOf(v).toFixed(1)}`).join(" ");
-  const fillD = `${d} L ${xOf(n - 1).toFixed(1)} ${PAD.top + PH} L ${xOf(0).toFixed(1)} ${PAD.top + PH} Z`;
-  const gid   = `fg-${label.replace(/\W/g, "")}-${color.slice(1)}`;
+  const prices = points.map((p) => p.price);
+  const minP   = Math.min(...prices);
+  const maxP   = Math.max(...prices);
+  const range  = maxP - minP || 1;
+  const n      = points.length;
+  const xOf    = (i) => PAD.left + (i / (n - 1)) * PW;
+  const yOf    = (v)  => PAD.top  + PH - ((v - minP) / range) * PH;
+  const color  = up ? "#4DFFB4" : "#FF6B6B";
+  const d      = points.map((pt, i) => `${i === 0 ? "M" : "L"} ${xOf(i).toFixed(1)} ${yOf(pt.price).toFixed(1)}`).join(" ");
+  const fillD  = `${d} L ${xOf(n - 1).toFixed(1)} ${PAD.top + PH} L ${xOf(0).toFixed(1)} ${PAD.top + PH} Z`;
+  const gid    = `lc-${up ? 1 : 0}`;
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => minP + f * range);
+  const step   = Math.max(1, Math.ceil(n / 6));
+  const xLabels = points.filter((_, i) => i % step === 0 || i === n - 1);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const rawX = (e.clientX - rect.left) * (W / rect.width) - PAD.left;
+    setHoverIdx(Math.max(0, Math.min(n - 1, Math.round((rawX / PW) * (n - 1)))));
+  }, [n]);
 
   return (
-    <div className="sk-fin-chart">
-      <div className="sk-fin-chart-label">{label}</div>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H, overflow: "visible" }}
-        onMouseLeave={() => setHovered(null)}>
+    <div className="sk-large-chart">
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="sk-large-chart-svg"
+        onMouseMove={handleMouseMove} onMouseLeave={() => setHoverIdx(null)}
+        onTouchMove={(e) => {
+          const t = e.touches[0];
+          if (!svgRef.current) return;
+          const rect = svgRef.current.getBoundingClientRect();
+          const rawX = (t.clientX - rect.left) * (W / rect.width) - PAD.left;
+          setHoverIdx(Math.max(0, Math.min(n - 1, Math.round((rawX / PW) * (n - 1)))));
+        }}
+        onTouchEnd={() => setHoverIdx(null)}>
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={color} stopOpacity="0.2" />
             <stop offset="100%" stopColor={color} stopOpacity="0"   />
           </linearGradient>
         </defs>
-
-        {/* horizontal grid lines */}
-        {[0, 0.5, 1].map((f, i) => (
-          <line key={i} x1={PAD.left} y1={PAD.top + PH * (1 - f)} x2={W - PAD.right} y2={PAD.top + PH * (1 - f)}
-            stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+        {yTicks.map((v, i) => (
+          <g key={i}>
+            <line x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+            <text x={PAD.left - 8} y={yOf(v)} textAnchor="end" dominantBaseline="middle"
+              style={{ fill: "rgba(255,255,255,0.25)", fontSize: 10, fontFamily: "monospace" }}>{fmtPrice(v)}</text>
+          </g>
         ))}
-
+        <line x1={PAD.left} y1={PAD.top + PH} x2={W - PAD.right} y2={PAD.top + PH} stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+        {xLabels.map((pt) => (
+          <text key={pt.i} x={xOf(pt.i)} y={H - 6} textAnchor="middle"
+            style={{ fill: "rgba(255,255,255,0.22)", fontSize: 9, fontFamily: "monospace" }}>{pt.time}</text>
+        ))}
         <path d={fillD} fill={`url(#${gid})`} />
-        <path d={d} fill="none" stroke={color} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-
-        {values.map((v, i) => {
-          const cx = xOf(i), cy = yOf(v);
-          const isHov = hovered === i;
-          const anchor = i === 0 ? "start" : i === n - 1 ? "end" : "middle";
-          return (
-            <g key={i} onMouseEnter={() => setHovered(i)} style={{ cursor: "default" }}>
-              {/* invisible wider hit area */}
-              <circle cx={cx} cy={cy} r={12} fill="transparent" />
-              <circle cx={cx} cy={cy} r={isHov ? 5.5 : 3.5}
-                fill={color} stroke="#080c14" strokeWidth="2"
-                style={{ transition: "r 0.15s" }} />
-              {/* X-axis quarter label */}
-              <text x={cx} y={H - 4} textAnchor={anchor}
-                style={{ fill: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>
-                {labels[i]}
-              </text>
-              {/* Hover value label */}
-              {isHov && (
-                <text x={cx} y={cy - 12} textAnchor={anchor}
-                  style={{ fill: color, fontSize: 10, fontFamily: "monospace", fontWeight: 700 }}>
-                  {fmtB(v)}
-                </text>
-              )}
-            </g>
-          );
-        })}
+        <path d={d} fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+        {hoverIdx !== null && (
+          <>
+            <line x1={xOf(hoverIdx)} y1={PAD.top} x2={xOf(hoverIdx)} y2={PAD.top + PH}
+              stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="4,3" />
+            <circle cx={xOf(hoverIdx)} cy={yOf(points[hoverIdx].price)} r={4}
+              fill={color} stroke="#0d1220" strokeWidth="2" />
+          </>
+        )}
       </svg>
+      {hoverIdx !== null && (
+        <div className="sk-chart-tooltip">
+          <span className="sk-chart-tt-time">{points[hoverIdx].time}</span>
+          <span className="sk-chart-tt-price" style={{ color }}>{fmtPrice(points[hoverIdx].price)}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── FinancialModal ────────────────────────────────────────────
+// ── Stock Detail Modal ────────────────────────────────────────
 
-function FinancialModal({ symbol, stockInfo, onClose }) {
-  const [fins,    setFins]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-
+function StockDetailModal({ data, onClose }) {
   useEffect(() => {
-    fetchFinancials(symbol)
-      .then((d) => { setFins(d); setLoading(false); })
-      .catch((e) => { setError(e.message); setLoading(false); });
-  }, [symbol]);
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, [onClose]);
 
-  const { name, price, change, changePct, up } = stockInfo ?? {};
-  const priceColor = up ? "#4DFFB4" : "#FF6B6B";
+  const {
+    symbol, name, price, prevClose, change, changePct, up, points,
+    marketState, exchange, currency,
+    dayOpen, dayHigh, dayLow, volume,
+    week52High, week52Low, marketCap,
+    postPrice, postChange, postPct,
+    prePrice,  preChange,  prePct,
+  } = data;
 
-  const METRICS = fins ? [
-    { label: "PROFIT MARGIN",    value: fins.profitMargin    },
-    { label: "GROSS MARGIN",     value: fins.grossMargin     },
-    { label: "OPERATING MARGIN", value: fins.operatingMargin },
-    { label: "RETURN ON EQUITY", value: fins.returnOnEquity  },
-    { label: "RETURN ON ASSETS", value: fins.returnOnAssets  },
-    { label: "P/E RATIO",        value: fins.peRatio         },
-    { label: "EPS (TTM)",        value: fins.eps             },
-    { label: "BETA",             value: fins.beta            },
-    { label: "REVENUE GROWTH",   value: fins.revenueGrowth   },
-    { label: "EARNINGS GROWTH",  value: fins.earningsGrowth  },
-  ] : [];
+  const priceColor = up ? "#4DFFB4" : "#FF6B6B";
+  const showPost   = postPrice && (marketState === "POST" || marketState === "CLOSED");
+  const showPre    = prePrice  && marketState === "PRE";
+  const postChg    = showPost ? fmtChg(postChange, postPct) : null;
+  const preChg     = showPre  ? fmtChg(preChange,  prePct)  : null;
+
+  const marketLabel = { REGULAR: "● Market Open", PRE: "◌ Pre-Market", POST: "◌ After-Hours", CLOSED: "○ Market Closed", MOCK: "⊙ Demo" }[marketState] ?? marketState;
+  const marketColor = { REGULAR: "#4DFFB4", PRE: "#FFD93D", POST: "#FFD93D", CLOSED: "rgba(255,255,255,0.3)", MOCK: "rgba(255,217,61,0.5)" }[marketState] ?? "rgba(255,255,255,0.3)";
+
+  const stats = [
+    { label: "OPEN",       value: fmtPrice(dayOpen)    },
+    { label: "DAY HIGH",   value: fmtPrice(dayHigh)    },
+    { label: "DAY LOW",    value: fmtPrice(dayLow)     },
+    { label: "PREV CLOSE", value: fmtPrice(prevClose)  },
+    { label: "VOLUME",     value: fmtVol(volume)       },
+    { label: "MKT CAP",    value: fmtB(marketCap)      },
+    { label: "52W HIGH",   value: fmtPrice(week52High) },
+    { label: "52W LOW",    value: fmtPrice(week52Low)  },
+    { label: "EXCHANGE",   value: exchange ?? "—"      },
+    { label: "CURRENCY",   value: currency ?? "USD"    },
+  ];
 
   return (
     <div className="sk-modal-overlay" onClick={onClose}>
       <div className="sk-modal" onClick={(e) => e.stopPropagation()}>
-
-        {/* Header */}
         <div className="sk-modal-header">
           <div className="sk-modal-title-group">
             <span className="sk-modal-symbol">{symbol}</span>
-            <span className="sk-modal-name">{name ?? symbol}</span>
+            <span className="sk-modal-name">{name}</span>
           </div>
-          {stockInfo && (
-            <div className="sk-modal-price-group">
-              <span className="sk-modal-price">{fmtPrice(price)}</span>
-              <span className="sk-modal-change" style={{ color: priceColor }}>
-                {up ? "▲" : "▼"} {Math.abs(change ?? 0).toFixed(2)} ({up ? "+" : ""}{(changePct ?? 0).toFixed(2)}%)
-              </span>
-            </div>
-          )}
+          <div className="sk-modal-price-group">
+            <span className="sk-modal-price">{fmtPrice(price)}</span>
+            <span className="sk-modal-change" style={{ color: priceColor }}>
+              {up ? "▲" : "▼"} {Math.abs(change).toFixed(2)} ({up ? "+" : ""}{changePct.toFixed(2)}%)
+            </span>
+            <span className="sk-market-state-badge" style={{ color: marketColor }}>{marketLabel}</span>
+          </div>
           <button className="sk-modal-close" onClick={onClose}>✕</button>
         </div>
 
-        {/* Body */}
         <div className="sk-modal-body">
-          {loading && (
-            <div className="sk-modal-loading">
-              <div className="sk-skeleton" style={{ height: 130, marginBottom: 14, borderRadius: 8 }} />
-              <div className="sk-skeleton" style={{ height: 130, marginBottom: 20, borderRadius: 8 }} />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
-                {Array.from({ length: 8 }).map((_, i) => <div key={i} className="sk-skeleton" style={{ height: 52, borderRadius: 8 }} />)}
-              </div>
+          {showPost && postChg && (
+            <div className="sk-ext-hours">
+              <span className="sk-ext-label">AFTER-HOURS</span>
+              <span className="sk-ext-price">{fmtPrice(postPrice)}</span>
+              <span style={{ color: postChg.color }}>{postChg.str}</span>
+            </div>
+          )}
+          {showPre && preChg && (
+            <div className="sk-ext-hours">
+              <span className="sk-ext-label">PRE-MARKET</span>
+              <span className="sk-ext-price">{fmtPrice(prePrice)}</span>
+              <span style={{ color: preChg.color }}>{preChg.str}</span>
             </div>
           )}
 
-          {error && !loading && (
-            <div className="sk-modal-error">
-              <div className="sk-modal-error-icon">⊗</div>
-              <div>Could not load financials</div>
-              <div className="sk-modal-error-sub">{error}</div>
-            </div>
-          )}
+          <div className="sk-modal-chart-wrap">
+            <LargeStockChart points={points} up={up} />
+          </div>
 
-          {fins && !loading && (
-            <>
-              <div className="sk-fin-section-label">QUARTERLY FINANCIALS — LAST 4 QUARTERS</div>
-
-              {/* Dual line charts */}
-              <div className="sk-fin-charts">
-                <FinancialLineChart quarters={fins.quarters} dataKey="revenue"   label="REVENUE"    color="#00C8E0" />
-                <FinancialLineChart quarters={fins.quarters} dataKey="netIncome" label="NET INCOME" color="#4DFFB4" />
+          <div className="sk-fin-section-label">DAY STATISTICS — sourced from Yahoo Finance</div>
+          <div className="sk-detail-stats">
+            {stats.map((s) => (
+              <div key={s.label} className="sk-detail-stat">
+                <div className="sk-detail-stat-label">{s.label}</div>
+                <div className="sk-detail-stat-value">{s.value}</div>
               </div>
-
-              {/* Quarter table */}
-              <div className="sk-fin-table">
-                <div className="sk-fin-table-head">
-                  <span>PERIOD</span>
-                  <span>REVENUE</span>
-                  <span>GROSS PROFIT</span>
-                  <span>NET INCOME</span>
-                  <span>COST OF REV.</span>
-                </div>
-                {fins.quarters.map((q, i) => (
-                  <div key={i} className="sk-fin-table-row">
-                    <span className="sk-fin-quarter">{fmtQuarter(q.date)}</span>
-                    <span style={{ color: "#00C8E0" }}>{q.revenueStr}</span>
-                    <span style={{ color: "#B94FFF" }}>{q.grossStr}</span>
-                    <span style={{ color: q.netIncome >= 0 ? "#4DFFB4" : "#FF6B6B" }}>{q.netIncomeStr}</span>
-                    <span style={{ color: "rgba(255,255,255,0.4)" }}>{fmtB(q.costOfRevenue)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Key metrics */}
-              <div className="sk-fin-section-label" style={{ marginTop: 22 }}>KEY METRICS</div>
-              <div className="sk-fin-metrics">
-                {METRICS.map((m) => (
-                  <div key={m.label} className="sk-fin-metric">
-                    <div className="sk-fin-metric-label">{m.label}</div>
-                    <div className="sk-fin-metric-value">{m.value}</div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -490,23 +411,29 @@ function StockMiniChart({ points, up }) {
 
 // ── Stock Widget ──────────────────────────────────────────────
 
-function StockWidget({ id, symbol, data, loading, error, onRetry, onRemove, onSelect, idx, dragSrc, dragOver, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop }) {
+function StockWidget({ id, symbol, data, loading, onRemove, onSelect,
+  idx, dragSrc, dragOver, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+  onTouchDragStart, onTouchDragMove, onTouchDragEnd }) {
+
   const isDragging = dragSrc === idx;
   const isOver     = dragOver === idx && dragSrc !== idx;
-
-  const cardClass = ["sk-widget", isDragging ? "sk-widget-dragging" : "", isOver ? "sk-widget-over" : ""].filter(Boolean).join(" ");
-
+  const cardClass  = ["sk-widget", isDragging ? "sk-widget-dragging" : "", isOver ? "sk-widget-over" : ""].filter(Boolean).join(" ");
   const dragHandlers = {
     onDragOver:  (e) => { e.preventDefault(); onDragOver(idx); },
     onDragLeave: onDragLeave,
     onDrop:      (e) => { e.preventDefault(); onDrop(idx); },
   };
 
-  // ── Loading state ──
+  const touchHandlers = {
+    onTouchStart: () => onTouchDragStart(idx),
+    onTouchMove:  (e) => { const t = e.touches[0]; onTouchDragMove(t.clientX, t.clientY); },
+    onTouchEnd:   onTouchDragEnd,
+  };
+
   if (loading) {
     return (
-      <div className={cardClass} {...dragHandlers}>
-        <div className="sk-widget-header" draggable onDragStart={() => onDragStart(idx)} onDragEnd={onDragEnd}>
+      <div className={cardClass} {...dragHandlers} data-widget-idx={idx}>
+        <div className="sk-widget-header" draggable onDragStart={() => onDragStart(idx)} onDragEnd={onDragEnd} {...touchHandlers}>
           <span className="sk-drag-handle">⠿</span>
           <span className="sk-widget-symbol">{symbol}</span>
           <span className="sk-widget-name sk-shimmer-text">Fetching…</span>
@@ -521,34 +448,49 @@ function StockWidget({ id, symbol, data, loading, error, onRetry, onRemove, onSe
     );
   }
 
-  // ── No data ──
   if (!data) return null;
 
-  const { name, price, change, changePct, up, points, isMock, marketState } = data;
-  const color      = up ? "#4DFFB4" : "#FF6B6B";
-  const isMarketOpen = marketState === "REGULAR";
+  const { name, price, change, changePct, up, points, isMock, marketState,
+    postPrice, postChange, postPct, prePrice, preChange, prePct } = data;
+
+  const color    = up ? "#4DFFB4" : "#FF6B6B";
+  const showPost = postPrice && (marketState === "POST" || marketState === "CLOSED");
+  const showPre  = prePrice  && marketState === "PRE";
 
   return (
-    <div className={cardClass} {...dragHandlers}>
-      <div className="sk-widget-header" draggable onDragStart={() => onDragStart(idx)} onDragEnd={onDragEnd}>
+    <div className={cardClass} {...dragHandlers} data-widget-idx={idx}>
+      <div className="sk-widget-header" draggable onDragStart={() => onDragStart(idx)} onDragEnd={onDragEnd} {...touchHandlers}>
         <span className="sk-drag-handle">⠿</span>
         <span className="sk-widget-symbol">{symbol}</span>
         <span className="sk-widget-name">{name}</span>
-        {isMock && <span className="sk-mock-badge" title="Yahoo Finance unavailable — showing demo data">demo</span>}
-        {error && !isMock && <span className="sk-mock-badge sk-error-badge" title={error}>err</span>}
-        <button className="sk-widget-remove" onClick={() => onRemove(id)}>✕</button>
+        {isMock && <span className="sk-mock-badge">demo</span>}
+        <button className="sk-widget-remove" onClick={(e) => { e.stopPropagation(); onRemove(id); }}>✕</button>
       </div>
 
-      <div className="sk-widget-body sk-widget-clickable" onClick={() => onSelect(symbol)} title="Click for financials">
+      <div className="sk-widget-body sk-widget-clickable" onClick={() => onSelect(symbol)}>
         <div className="sk-price-row">
           <span className="sk-price">{fmtPrice(price)}</span>
           <span className="sk-change" style={{ color }}>
             {up ? "▲" : "▼"} {Math.abs(change).toFixed(2)} ({up ? "+" : ""}{changePct.toFixed(2)}%)
           </span>
         </div>
-        {!isMarketOpen && !isMock && (
-          <div className="sk-market-closed">
-            {marketState === "PRE" ? "Pre-market" : marketState === "POST" ? "After-hours" : "Market closed"}
+
+        {showPost && postChange != null && (
+          <div className="sk-widget-ext">
+            <span className="sk-widget-ext-label">After-hrs</span>
+            <span className="sk-widget-ext-price">{fmtPrice(postPrice)}</span>
+            <span style={{ color: postChange >= 0 ? "#4DFFB4" : "#FF6B6B", fontSize: 10 }}>
+              {postChange >= 0 ? "▲" : "▼"} {postPct != null ? `${Math.abs(postPct).toFixed(2)}%` : ""}
+            </span>
+          </div>
+        )}
+        {showPre && preChange != null && (
+          <div className="sk-widget-ext">
+            <span className="sk-widget-ext-label">Pre-mkt</span>
+            <span className="sk-widget-ext-price">{fmtPrice(prePrice)}</span>
+            <span style={{ color: preChange >= 0 ? "#4DFFB4" : "#FF6B6B", fontSize: 10 }}>
+              {preChange >= 0 ? "▲" : "▼"} {prePct != null ? `${Math.abs(prePct).toFixed(2)}%` : ""}
+            </span>
           </div>
         )}
 
@@ -559,14 +501,7 @@ function StockWidget({ id, symbol, data, loading, error, onRetry, onRemove, onSe
           <span>12:00</span>
           <span>16:00</span>
         </div>
-
-        <div className="sk-financials-hint">↗ Tap for financials</div>
-
-        {isMock && (
-          <button className="sk-retry-btn" onClick={(e) => { e.stopPropagation(); onRetry(symbol); }}>
-            ↻ Retry live data
-          </button>
-        )}
+        <div className="sk-financials-hint">↗ Tap for details</div>
       </div>
     </div>
   );
@@ -575,29 +510,20 @@ function StockWidget({ id, symbol, data, loading, error, onRetry, onRemove, onSe
 // ── Ticker Bar ────────────────────────────────────────────────
 
 function TickerBar({ stockData, indexData }) {
-  const indexItems = INDEX_CFG
-    .map(({ key, ticker }) => {
-      const d = indexData[key];
-      if (!d) return null;
-      return { sym: ticker, price: fmtPrice(d.price), pct: `${d.up ? "+" : ""}${d.changePct.toFixed(2)}%`, up: d.up };
-    })
-    .filter(Boolean);
+  const indexItems = INDEX_CFG.map(({ key, ticker }) => {
+    const d = indexData[key];
+    if (!d) return null;
+    return { sym: ticker, price: fmtPrice(d.price), pct: `${d.up ? "+" : ""}${d.changePct.toFixed(2)}%`, up: d.up };
+  }).filter(Boolean);
 
-  const stockItems = Object.values(stockData)
-    .filter((d) => !d.isMock)
-    .map((d) => ({ sym: d.symbol, price: fmtPrice(d.price), pct: `${d.up ? "+" : ""}${d.changePct.toFixed(2)}%`, up: d.up }));
+  const stockItems = Object.values(stockData).filter((d) => !d.isMock).map((d) => ({
+    sym: d.symbol, price: fmtPrice(d.price), pct: `${d.up ? "+" : ""}${d.changePct.toFixed(2)}%`, up: d.up,
+  }));
 
   const items = [...indexItems, ...stockItems];
-  if (items.length === 0) {
-    return (
-      <div className="sk-ticker-outer">
-        <div className="sk-ticker-loading">Fetching market data…</div>
-      </div>
-    );
-  }
+  if (items.length === 0) return <div className="sk-ticker-outer"><div className="sk-ticker-loading">Fetching market data…</div></div>;
 
-  const all = [...items, ...items]; // duplicate for seamless loop
-
+  const all = [...items, ...items];
   return (
     <div className="sk-ticker-outer">
       <div className="sk-ticker-track" style={{ animationDuration: `${Math.max(20, all.length * 3)}s` }}>
@@ -605,9 +531,7 @@ function TickerBar({ stockData, indexData }) {
           <span key={i} className="sk-ticker-item">
             <span className="sk-ticker-sym">{item.sym}</span>
             <span className="sk-ticker-price">{item.price}</span>
-            <span className="sk-ticker-chg" style={{ color: item.up ? "#4DFFB4" : "#FF6B6B" }}>
-              {item.up ? "▲" : "▼"} {item.pct}
-            </span>
+            <span className="sk-ticker-chg" style={{ color: item.up ? "#4DFFB4" : "#FF6B6B" }}>{item.up ? "▲" : "▼"} {item.pct}</span>
             <span className="sk-ticker-sep">·</span>
           </span>
         ))}
@@ -621,12 +545,9 @@ function TickerBar({ stockData, indexData }) {
 function MarketBar({ indexData }) {
   const indices = INDEX_CFG.map(({ key, label }) => {
     const d = indexData[key];
-    if (d) {
-      return { label, value: fmtPrice(d.price), change: `${d.up ? "+" : ""}${d.changePct.toFixed(2)}%`, up: d.up };
-    }
+    if (d) return { label, value: fmtPrice(d.price), change: `${d.up ? "+" : ""}${d.changePct.toFixed(2)}%`, up: d.up };
     return INDEX_FALLBACK[key] ?? { label, value: "—", change: "—", up: true };
   });
-
   return (
     <div className="sk-market-bar">
       {indices.map((idx) => (
@@ -662,7 +583,6 @@ function NewsCarousel() {
   }, []);
 
   const advance = useCallback(() => setActive((p) => (p >= maxIdx ? 0 : p + 1)), [maxIdx]);
-
   useEffect(() => {
     if (paused) return;
     timerRef.current = setInterval(advance, 5000);
@@ -692,7 +612,6 @@ function NewsCarousel() {
           <button className="sk-news-btn" onClick={() => go(1)}  disabled={active >= maxIdx}>›</button>
         </div>
       </div>
-
       <div className="sk-news-viewport" ref={viewRef}>
         <div className="sk-news-track" style={{ transform: `translateX(-${active * cardPx}px)`, width: `${total * cardPx}px` }}>
           {NEWS_ITEMS.map((item, i) => (
@@ -710,7 +629,6 @@ function NewsCarousel() {
           ))}
         </div>
       </div>
-
       <div className="sk-news-dots">
         {Array.from({ length: maxIdx + 1 }, (_, i) => (
           <button key={i} className={`sk-news-dot${i === active ? " sk-dot-active" : ""}`}
@@ -735,8 +653,7 @@ function AddStockPanel({ onAdd, onClose, existing }) {
     const s = sym.trim().toUpperCase();
     if (!s) return;
     if (existing.includes(s)) { setErr(`${s} is already in your watchlist.`); return; }
-    onAdd(s);
-    setInput(""); setErr("");
+    onAdd(s); setInput(""); setErr("");
   };
 
   return (
@@ -747,8 +664,7 @@ function AddStockPanel({ onAdd, onClose, existing }) {
           value={input}
           onChange={(e) => { setInput(e.target.value.toUpperCase()); setErr(""); }}
           onKeyDown={(e) => { if (e.key === "Enter") commit(input); if (e.key === "Escape") onClose(); }}
-          maxLength={8}
-        />
+          maxLength={8} />
         <button className="sk-add-confirm" onClick={() => commit(input)}>Add</button>
         <button className="sk-add-cancel"  onClick={onClose}>Cancel</button>
       </div>
@@ -779,74 +695,79 @@ export default function Stocks() {
     return DEFAULT_WATCHLIST;
   });
 
-  const [stockData, setStockData] = useState({});  // symbol -> parsed data
-  const [loading,   setLoading]   = useState({});  // symbol -> bool
-  const [errors,    setErrors]    = useState({});  // symbol -> string
-  const [indexData, setIndexData] = useState({});  // "^GSPC" -> parsed data
-  const [showAdd,      setShowAdd]      = useState(false);
-  const [dragSrc,      setDragSrc]      = useState(null);
-  const [dragOver,     setDragOver]     = useState(null);
+  const [stockData,     setStockData]     = useState({});
+  const [loading,       setLoading]       = useState({});
+  const [indexData,     setIndexData]     = useState({});
+  const [showAdd,       setShowAdd]       = useState(false);
+  const [dragSrc,       setDragSrc]       = useState(null);
+  const [dragOver,      setDragOver]      = useState(null);
   const [selectedStock, setSelectedStock] = useState(null);
+
+  const touchDragSrcRef  = useRef(null);
+  const touchDragOverRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem("stocks-watchlist", JSON.stringify(watchlist));
   }, [watchlist]);
 
-  // ── Fetch market indices once ──
   useEffect(() => {
     INDEX_CFG.forEach(({ key }) => {
       fetchSymbolData(key)
         .then((d) => setIndexData((p) => ({ ...p, [key]: d })))
-        .catch(() => {}); // silent — INDEX_FALLBACK is shown
+        .catch(() => {});
     });
   }, []);
 
-  // ── Fetch any watchlist symbol not yet loaded ──
   useEffect(() => {
     watchlist.forEach(({ symbol }) => {
       if (stockData[symbol] || loading[symbol]) return;
       setLoading((p) => ({ ...p, [symbol]: true }));
-
       fetchSymbolData(symbol)
         .then((data) => {
           setStockData((p) => ({ ...p, [symbol]: data }));
           setLoading((p)   => ({ ...p, [symbol]: false }));
-          setErrors((p)    => ({ ...p, [symbol]: null }));
         })
-        .catch((err) => {
-          // Fall back to seeded mock data so the widget still shows something
-          const mock = getMockData(symbol);
-          setStockData((p) => ({ ...p, [symbol]: mock }));
+        .catch(() => {
+          setStockData((p) => ({ ...p, [symbol]: getMockData(symbol) }));
           setLoading((p)   => ({ ...p, [symbol]: false }));
-          setErrors((p)    => ({ ...p, [symbol]: err.message }));
         });
     });
   }, [watchlist.map((w) => w.symbol).join(",")]);
 
-  const addStock = (sym) => {
-    setWatchlist((prev) => [...prev, { id: `s${Date.now()}`, symbol: sym }]);
-    setShowAdd(false);
+  const addStock    = (sym) => { setWatchlist((p) => [...p, { id: `s${Date.now()}`, symbol: sym }]); setShowAdd(false); };
+  const removeStock = (id)  => setWatchlist((p) => p.filter((w) => w.id !== id));
+
+  const handleTouchDragStart = (idx) => {
+    touchDragSrcRef.current  = idx;
+    touchDragOverRef.current = idx;
+    setDragSrc(idx);
   };
 
-  const removeStock = (id) => setWatchlist((prev) => prev.filter((w) => w.id !== id));
+  const handleTouchDragMove = (x, y) => {
+    if (touchDragSrcRef.current === null) return;
+    const el   = document.elementFromPoint(x, y);
+    const card = el?.closest("[data-widget-idx]");
+    if (card) {
+      const idx = parseInt(card.dataset.widgetIdx, 10);
+      if (!isNaN(idx)) { touchDragOverRef.current = idx; setDragOver(idx); }
+    }
+  };
 
-  const retryStock = (sym) => {
-    _cache.delete(sym); // clear stale cache entry
-    setLoading((p)   => ({ ...p, [sym]: true }));
-    setStockData((p) => { const n = { ...p }; delete n[sym]; return n; });
-
-    fetchSymbolData(sym)
-      .then((data) => {
-        setStockData((p) => ({ ...p, [sym]: data }));
-        setLoading((p)   => ({ ...p, [sym]: false }));
-        setErrors((p)    => ({ ...p, [sym]: null }));
-      })
-      .catch((err) => {
-        const mock = getMockData(sym);
-        setStockData((p) => ({ ...p, [sym]: mock }));
-        setLoading((p)   => ({ ...p, [sym]: false }));
-        setErrors((p)    => ({ ...p, [sym]: err.message }));
+  const handleTouchDragEnd = () => {
+    const src  = touchDragSrcRef.current;
+    const over = touchDragOverRef.current;
+    if (src !== null && over !== null && src !== over) {
+      setWatchlist((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(src, 1);
+        next.splice(src < over ? over - 1 : over, 0, moved);
+        return next;
       });
+    }
+    touchDragSrcRef.current  = null;
+    touchDragOverRef.current = null;
+    setDragSrc(null);
+    setDragOver(null);
   };
 
   const handleDrop = (toIdx) => {
@@ -862,14 +783,11 @@ export default function Stocks() {
     setDragOver(null);
   };
 
-  const existingSymbols = watchlist.map((w) => w.symbol);
-
   return (
     <div className="sk-page">
       <div className="sk-blob sk-blob-cyan" />
       <div className="sk-blob sk-blob-purple" />
 
-      {/* Header */}
       <header className="sk-header">
         <div>
           <div className="sk-logo">◈ NEXUS</div>
@@ -887,7 +805,6 @@ export default function Stocks() {
       <MarketBar indexData={indexData} />
       <NewsCarousel />
 
-      {/* Watchlist header */}
       <div className="sk-watchlist-hd">
         <span className="sk-section-label">WATCHLIST</span>
         <span className="sk-watchlist-count">{watchlist.length} stocks</span>
@@ -896,9 +813,8 @@ export default function Stocks() {
         </button>
       </div>
 
-      {showAdd && <AddStockPanel onAdd={addStock} onClose={() => setShowAdd(false)} existing={existingSymbols} />}
+      {showAdd && <AddStockPanel onAdd={addStock} onClose={() => setShowAdd(false)} existing={watchlist.map((w) => w.symbol)} />}
 
-      {/* Grid */}
       <div className="sk-grid">
         {watchlist.length === 0 && (
           <div className="sk-empty">
@@ -909,35 +825,30 @@ export default function Stocks() {
         )}
         {watchlist.map((item, i) => (
           <StockWidget
-            key={item.id}
-            id={item.id}
-            symbol={item.symbol}
+            key={item.id} id={item.id} symbol={item.symbol}
             data={stockData[item.symbol] ?? null}
             loading={!!loading[item.symbol]}
-            error={errors[item.symbol] ?? null}
-            onRetry={retryStock}
-            onRemove={removeStock}
-            onSelect={setSelectedStock}
-            idx={i}
-            dragSrc={dragSrc}
-            dragOver={dragOver}
+            onRemove={removeStock} onSelect={setSelectedStock}
+            idx={i} dragSrc={dragSrc} dragOver={dragOver}
             onDragStart={setDragSrc}
             onDragEnd={() => { setDragSrc(null); setDragOver(null); }}
             onDragOver={setDragOver}
             onDragLeave={() => setDragOver(null)}
             onDrop={handleDrop}
+            onTouchDragStart={handleTouchDragStart}
+            onTouchDragMove={handleTouchDragMove}
+            onTouchDragEnd={handleTouchDragEnd}
           />
         ))}
       </div>
 
       <div className="sk-demo-note">
-        ⊙ Data sourced from Yahoo Finance via corsproxy.io · Widgets showing "demo" badge are using generated fallback data · Prices refresh every 5 minutes
+        ⊙ Prices via Yahoo Finance (corsproxy.io) · After-hours shown when markets are closed · Refreshes every 5 min · "demo" = Yahoo unavailable
       </div>
 
-      {selectedStock && (
-        <FinancialModal
-          symbol={selectedStock}
-          stockInfo={stockData[selectedStock] ?? null}
+      {selectedStock && stockData[selectedStock] && (
+        <StockDetailModal
+          data={stockData[selectedStock]}
           onClose={() => setSelectedStock(null)}
         />
       )}

@@ -615,6 +615,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 .sk-widget-header:active { cursor: grabbing; }
 
@@ -893,7 +894,7 @@
 .sk-modal-error-icon { font-size: 32px; margin-bottom: 10px; }
 .sk-modal-error-sub  { font-size: 11px; opacity: 0.5; margin-top: 6px; font-family: "Space Mono", monospace; }
 
-/* ── Financials section label ────────────────────────────── */
+/* ── Section label (shared) ──────────────────────────────── */
 
 .sk-fin-section-label {
   font-family: "Space Mono", monospace;
@@ -903,83 +904,126 @@
   margin-bottom: 14px;
 }
 
-/* ── Dual line charts ────────────────────────────────────── */
+/* ── Extended hours (after-hours / pre-market) in widget ── */
 
-.sk-fin-charts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.sk-fin-chart {
-  background: rgba(255, 255, 255, 0.018);
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  border-radius: 12px;
-  padding: 14px 14px 8px;
-}
-
-.sk-fin-chart-label {
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.3);
-  letter-spacing: 2px;
-  margin-bottom: 6px;
-}
-
-.sk-fin-chart-empty {
-  height: 90px;
+.sk-widget-ext {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-family: "Space Mono", monospace;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.15);
+  gap: 7px;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: rgba(255, 217, 61, 0.06);
+  border: 1px solid rgba(255, 217, 61, 0.15);
+  border-radius: 8px;
 }
 
-/* ── Quarter table ───────────────────────────────────────── */
+.sk-widget-ext-label {
+  font-family: "Space Mono", monospace;
+  font-size: 8px;
+  color: rgba(255, 217, 61, 0.55);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
 
-.sk-fin-table {
-  background: rgba(255, 255, 255, 0.018);
-  border: 1px solid rgba(255, 255, 255, 0.055);
+.sk-widget-ext-price {
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Extended hours in modal ─────────────────────────────── */
+
+.sk-ext-hours {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 217, 61, 0.06);
+  border: 1px solid rgba(255, 217, 61, 0.18);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sk-ext-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  color: rgba(255, 217, 61, 0.6);
+  letter-spacing: 2px;
+  flex-shrink: 0;
+}
+
+.sk-ext-price {
+  font-family: "Space Mono", monospace;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── Market state badge ──────────────────────────────────── */
+
+.sk-market-state-badge {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+/* ── Large day chart ─────────────────────────────────────── */
+
+.sk-modal-chart-wrap {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.sk-large-chart {
+  position: relative;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 4px;
+  padding: 4px 0 0;
 }
 
-.sk-fin-table-head,
-.sk-fin-table-row {
-  display: grid;
-  grid-template-columns: 70px repeat(4, 1fr);
-  gap: 0;
-  padding: 9px 16px;
+.sk-large-chart-svg {
+  width: 100%;
+  height: 190px;
+  display: block;
+  touch-action: none;
+}
+
+.sk-chart-tooltip {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(13, 18, 32, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  padding: 5px 12px;
+  pointer-events: none;
+}
+
+.sk-chart-tt-time {
   font-family: "Space Mono", monospace;
   font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.sk-fin-table-head {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.25);
-  letter-spacing: 1px;
-  font-size: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.sk-fin-table-row {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  transition: background 0.15s;
-}
-.sk-fin-table-row:last-child { border-bottom: none; }
-.sk-fin-table-row:hover { background: rgba(255, 255, 255, 0.022); }
-
-.sk-fin-quarter {
-  color: rgba(255, 255, 255, 0.5);
+.sk-chart-tt-price {
+  font-family: "Space Mono", monospace;
+  font-size: 13px;
   font-weight: 700;
 }
 
-/* ── Key metrics grid ────────────────────────────────────── */
+/* ── Day stats grid ──────────────────────────────────────── */
 
-.sk-fin-metrics {
+.sk-detail-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
@@ -989,12 +1033,12 @@
   border: 1px solid rgba(255, 255, 255, 0.055);
 }
 
-.sk-fin-metric {
+.sk-detail-stat {
   background: #0d1220;
   padding: 12px 14px;
 }
 
-.sk-fin-metric-label {
+.sk-detail-stat-label {
   font-family: "Space Mono", monospace;
   font-size: 8px;
   color: rgba(255, 255, 255, 0.22);
@@ -1002,9 +1046,9 @@
   margin-bottom: 5px;
 }
 
-.sk-fin-metric-value {
+.sk-detail-stat-value {
   font-family: "Space Mono", monospace;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
 }
@@ -1026,42 +1070,70 @@
 /* ── Mobile ( ≤ 640px ) ──────────────────────────────────── */
 
 @media (max-width: 640px) {
+  /* Modal: slide up from bottom */
   .sk-modal { border-radius: 16px 16px 0 0; max-height: 92vh; }
   .sk-modal-overlay { align-items: flex-end; padding: 0; }
-  .sk-fin-charts { grid-template-columns: 1fr; }
-  .sk-fin-metrics { grid-template-columns: repeat(2, 1fr); }
-  .sk-fin-table-head,
-  .sk-fin-table-row { grid-template-columns: 60px repeat(2, 1fr); font-size: 9px; }
-  .sk-fin-table-head span:nth-child(n+4),
-  .sk-fin-table-row  span:nth-child(n+4) { display: none; }
+  .sk-detail-stats { grid-template-columns: repeat(2, 1fr); }
+  .sk-large-chart-svg { height: 140px; }
 
+  /* Larger close button for thumb */
+  .sk-modal-close { width: 38px; height: 38px; font-size: 14px; }
+
+  /* Modal header: allow wrapping so price doesn't get crushed */
+  .sk-modal-header { gap: 10px; padding: 14px 16px; }
+  .sk-modal-title-group { flex-direction: column; gap: 2px; align-items: flex-start; }
+  .sk-modal-name { white-space: normal; }
+  .sk-modal-price-group { flex-wrap: wrap; gap: 6px; }
+  .sk-modal-price { font-size: 22px; }
+  .sk-modal-body { padding: 14px 16px 20px; }
+
+  /* Header */
   .sk-header {
     padding: 12px 16px;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
-
   .sk-nav { order: 3; width: 100%; justify-content: center; }
+  .sk-signout-btn { font-size: 9px; padding: 5px 10px; }
 
-  .sk-market-bar {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .sk-market-card { padding: 10px 16px; }
+  /* Market bar: 2×2 grid */
+  .sk-market-bar { grid-template-columns: repeat(2, 1fr); }
+  .sk-market-card { padding: 10px 14px; }
   .sk-market-value { font-size: 13px; }
 
+  /* News section */
   .sk-news-section { padding: 14px 16px 12px; }
+  .sk-news-btn { width: 36px; height: 36px; font-size: 18px; }
 
+  /* Watchlist & add panel */
   .sk-watchlist-hd { padding: 14px 16px 0; flex-wrap: wrap; }
   .sk-add-panel     { padding: 10px 16px 0; }
+  .sk-add-input { min-width: unset; }
+  .sk-add-row { gap: 6px; }
 
+  /* Stock grid */
   .sk-grid {
     grid-template-columns: 1fr;
     padding: 16px 16px 24px;
     gap: 12px;
   }
 
-  .sk-empty { grid-column: span 1; padding: 40px 20px; }
+  /* Larger touch targets on widget header */
+  .sk-widget-header {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+  .sk-drag-handle {
+    font-size: 20px;
+    padding: 0 4px;
+    color: rgba(255, 255, 255, 0.3);
+  }
+  .sk-widget-remove {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
 
+  .sk-empty { grid-column: span 1; padding: 40px 20px; }
   .sk-demo-note { padding: 12px 16px 20px; }
 }
 
