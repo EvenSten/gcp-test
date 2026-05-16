@@ -4,12 +4,11 @@ import { signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import "./Stocks.css";
 
-// ── Yahoo Finance via CORS proxy ──────────────────────────────
-// v8/finance/chart works from the browser via corsproxy.io.
-// quoteSummary (financials) requires auth cookies so we don't use it.
+// ── Yahoo Finance via self-hosted proxy ───────────────────────
+// Requests go to /yf-proxy/ which nginx (prod) and Vite (dev) both
+// forward server-side to query1.finance.yahoo.com — no CORS proxy needed.
 
-const CORS_PROXY = "https://corsproxy.io/?url=";
-const YF_CHART   = "https://query1.finance.yahoo.com/v8/finance/chart";
+const YF_CHART = "/yf-proxy/v8/finance/chart";
 
 const _cache = new Map();
 const TTL    = 5 * 60 * 1000;
@@ -70,10 +69,10 @@ async function fetchSymbolData(symbol) {
   const cached = _cache.get(sym);
   if (cached && Date.now() - cached.ts < TTL) return cached.data;
 
-  const yfUrl = `${YF_CHART}/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=true`;
-  const res   = await fetch(CORS_PROXY + encodeURIComponent(yfUrl));
+  const url  = `${YF_CHART}/${encodeURIComponent(sym)}?range=1d&interval=5m&includePrePost=true`;
+  const res  = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json  = await res.json();
+  const json = await res.json();
 
   const data = parseYahooResponse(sym, json);
   _cache.set(sym, { data, ts: Date.now() });
@@ -843,7 +842,7 @@ export default function Stocks() {
       </div>
 
       <div className="sk-demo-note">
-        ⊙ Prices via Yahoo Finance (corsproxy.io) · After-hours shown when markets are closed · Refreshes every 5 min · "demo" = Yahoo unavailable
+        ⊙ Prices via Yahoo Finance · After-hours shown when markets are closed · Refreshes every 5 min · "demo" = Yahoo unavailable
       </div>
 
       {selectedStock && stockData[selectedStock] && (
