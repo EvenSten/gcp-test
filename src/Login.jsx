@@ -5,8 +5,10 @@ import {
   GoogleAuthProvider,
   fetchSignInMethodsForEmail,
   getAdditionalUserInfo,
+  signOut,
 } from "firebase/auth";
-import { auth } from "./firebase";
+import { ref, get, set } from "firebase/database";
+import { auth, db } from "./firebase";
 import "./Login.css";
 
 const googleProvider = new GoogleAuthProvider();
@@ -21,18 +23,34 @@ function friendlyError(code) {
   return AUTH_ERRORS[code] ?? "Something went wrong. Please try again.";
 }
 
+function encodeEmail(email) {
+  return email.toLowerCase().replace(/\./g, ",");
+}
+
 export default function Login() {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
+  const checkDisabled = async (uid) => {
+    const snap = await get(ref(db, `admin/disabledUsers/${uid}`));
+    return snap.exists();
+  };
+
   const handleEmail = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+
+      const disabled = await checkDisabled(cred.user.uid);
+      if (disabled) {
+        await signOut(auth);
+        setError("Your account has been disabled. Contact your administrator.");
+        return;
+      }
     } catch (err) {
       if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
         try {
@@ -43,7 +61,6 @@ export default function Login() {
               : "Incorrect password."
           );
         } catch {
-          // Email enumeration protection is enabled — can't distinguish, show generic
           setError("Incorrect email or password. If you don't have an account, contact your administrator.");
         }
       } else {
@@ -60,9 +77,32 @@ export default function Login() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(result);
+      const { uid, email: userEmail, displayName } = result.user;
+
       if (info?.isNewUser) {
-        await result.user.delete();
-        setError("No account found for this Google address. Contact your administrator to get access.");
+        // Check Gmail allowlist for first-time Google sign-ins
+        const key = encodeEmail(userEmail);
+        const snap = await get(ref(db, `admin/allowedGmails/${key}`));
+        if (!snap.exists()) {
+          await result.user.delete();
+          setError("No account found for this Google address. Contact your administrator to get access.");
+          return;
+        }
+        // Add to managed accounts on first approval
+        await set(ref(db, `admin/accounts/${uid}`), {
+          email: userEmail,
+          displayName: displayName || "",
+          provider: "google",
+          createdAt: Date.now(),
+          status: "active",
+        });
+      }
+
+      // Block disabled accounts
+      const disabled = await checkDisabled(uid);
+      if (disabled) {
+        await signOut(auth);
+        setError("Your account has been disabled. Contact your administrator.");
       }
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
