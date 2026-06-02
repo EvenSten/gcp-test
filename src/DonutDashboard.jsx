@@ -480,7 +480,7 @@ function WidgetCard({ widget, idx, dragSrc, dragOver, data, history, historyLoad
 
 // ── Main Dashboard ───────────────────────────────────────────
 
-export default function DonutDashboard({ isAdmin = false }) {
+export default function DonutDashboard() {
   const [data, setData]                   = useState([]);
   const [loading, setLoading]             = useState(true);
   const [history, setHistory]             = useState([]);
@@ -678,9 +678,6 @@ export default function DonutDashboard({ isAdmin = false }) {
           <span className="dd-hdate">{grandTotalDisplay}</span>
           <Link to="/stocks" className="dd-editor-link" style={{ borderColor: "rgba(185,79,255,0.35)", color: "#B94FFF", background: "rgba(185,79,255,0.08)" }}>▦ Stocks</Link>
           <Link to="/editor" className="dd-editor-link">Edit Data →</Link>
-          {isAdmin && (
-            <Link to="/admin" className="dd-editor-link" style={{ borderColor: "rgba(255,107,107,0.35)", color: "#FF6B6B", background: "rgba(255,107,107,0.08)" }}>⚙ Admin</Link>
-          )}
           <button className="dd-signout-btn" onClick={() => signOut(auth)}>Sign Out</button>
         </div>
       </header>

@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { getAuth } from "firebase/auth";
 
-export const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyCX6aDTH1TNo-JBh6UkyjVd7Mo7OQmLoj0",
   authDomain: "testdata-16710.firebaseapp.com",
   databaseURL: "https://testdata-16710-default-rtdb.firebaseio.com",
