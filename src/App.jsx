@@ -6,6 +6,7 @@ import DonutDashboard from "./DonutDashboard";
 import DataEditor from "./DataEditor";
 import Stocks from "./Stocks";
 import Login from "./Login";
+import Rick from "./Rick";
 
 function PrivateRoute({ children }) {
   return children;
@@ -42,6 +43,10 @@ export default function App() {
         <Route
           path="/stocks"
           element={user ? <Stocks /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/rick"
+          element={user ? <Rick /> : <Navigate to="/login" replace />}
         />
       </Routes>
     </BrowserRouter>
